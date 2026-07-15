@@ -220,7 +220,7 @@ const Contact = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6">
                   <p className="max-w-[250px] leading-relaxed">
-                    For urgent inquiries, reach me at <a href={`mailto:${personalInfo.emails.primary}`} className="underline hover:text-white transition-colors">{personalInfo.emails.primary}</a>
+                    For urgent inquiries, reach me at <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${personalInfo.emails.primary}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">{personalInfo.emails.primary}</a>
                   </p>
                   
                   <button 

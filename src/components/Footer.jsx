@@ -41,7 +41,7 @@ const Footer = () => {
         </div>
         
         <div className="flex flex-col gap-3 md:items-center">
-          <a href={`mailto:${personalInfo.emails.primary}`} className="underline hover:text-white transition-colors underline-offset-4 decoration-1 lowercase">
+          <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${personalInfo.emails.primary}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors underline-offset-4 decoration-1 lowercase">
             {personalInfo.emails.primary}
           </a>
           {/* Social Links */}
