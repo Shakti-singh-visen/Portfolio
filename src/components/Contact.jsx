@@ -44,12 +44,33 @@ const Contact = () => {
       emailjsConfig.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY';
 
     if (!isConfigured) {
-      // EmailJS not configured — fallback to prefilled mailto
-      const mailtoLink = `mailto:${personalInfo.emails.primary}?subject=Portfolio Contact from ${firstName} ${lastName}&body=${encodeURIComponent(`From: ${firstName} ${lastName}\nEmail: ${email}\n\n${message}`)}`;
-      window.open(mailtoLink, '_blank');
-      setStatus('success');
-      formRef.current.reset();
-      setTimeout(() => setStatus('idle'), 3000);
+      // EmailJS not configured — fallback to a silent FormSubmit AJAX submission
+      try {
+        const response = await fetch(`https://formsubmit.co/ajax/${personalInfo.emails.primary}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            name: `${firstName} ${lastName}`,
+            email: email,
+            message: message,
+            _subject: `New Portfolio Message from ${firstName} ${lastName}`
+          })
+        });
+        
+        if (response.ok) {
+          setStatus('success');
+          formRef.current.reset();
+        } else {
+          setStatus('error');
+        }
+      } catch (error) {
+        console.error('FormSubmit Error:', error);
+        setStatus('error');
+      }
+      setTimeout(() => setStatus('idle'), 4000);
       return;
     }
 
