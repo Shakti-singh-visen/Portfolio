@@ -16,19 +16,14 @@ const Contact = () => {
   const y = useTransform(scrollYProgress, [0, 1], ["-20%", "30%"]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (status === 'sending') return; // Prevent duplicate submissions
-
-    setStatus('sending');
-
     const form = formRef.current;
     const firstName = form.querySelector('#firstName')?.value || '';
-    const lastName = form.querySelector('#lastName')?.value || '';
     const email = form.querySelector('#email')?.value || '';
     const message = form.querySelector('#message')?.value || '';
 
     // Validate inputs
     if (!firstName.trim() || !email.trim() || !message.trim()) {
+      e.preventDefault();
       setStatus('error');
       setTimeout(() => setStatus('idle'), 3000);
       return;
@@ -44,37 +39,16 @@ const Contact = () => {
       emailjsConfig.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY';
 
     if (!isConfigured) {
-      // EmailJS not configured — fallback to a silent FormSubmit AJAX submission
-      try {
-        const response = await fetch(`https://formsubmit.co/ajax/${personalInfo.emails.primary}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            name: `${firstName} ${lastName}`,
-            email: email,
-            message: message,
-            _subject: `New Portfolio Message from ${firstName} ${lastName}`
-          })
-        });
-        
-        if (response.ok) {
-          setStatus('success');
-          formRef.current.reset();
-        } else {
-          setStatus('error');
-        }
-      } catch (error) {
-        console.error('FormSubmit Error:', error);
-        setStatus('error');
-      }
-      setTimeout(() => setStatus('idle'), 4000);
+      // EmailJS not configured — let browser submit form natively to FormSubmit
+      setStatus('sending');
       return;
     }
 
     // EmailJS integration
+    e.preventDefault();
+    if (status === 'sending') return; // Prevent duplicate submissions
+    setStatus('sending');
+
     try {
       const emailjs = await import('@emailjs/browser');
       await emailjs.sendForm(
@@ -130,7 +104,18 @@ const Contact = () => {
             </a>
           </div>
 
-          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-12 md:gap-16 w-full">
+          <form 
+            ref={formRef} 
+            action={`https://formsubmit.co/${personalInfo.emails.primary}`}
+            method="POST"
+            onSubmit={handleSubmit} 
+            className="flex flex-col gap-12 md:gap-16 w-full"
+          >
+            {/* FormSubmit Configurations */}
+            <input type="hidden" name="_captcha" value="false" />
+            <input type="hidden" name="_next" value={typeof window !== 'undefined' ? window.location.href : 'https://portfolio-tau-gold-76.vercel.app/#contact'} />
+            <input type="hidden" name="_subject" value="New message from portfolio website!" />
+
             <div className="flex flex-col md:flex-row gap-12 md:gap-20 w-full">
               {/* Left Column */}
               <div className="flex-1 flex flex-col gap-10">
@@ -157,7 +142,7 @@ const Contact = () => {
                   <input 
                     type="email" 
                     id="email" 
-                    name="user_email"
+                    name="email"
                     placeholder="Email" 
                     required
                     className="w-full bg-transparent border-b border-white/40 pb-3 text-lg focus:outline-none focus:border-white transition-all duration-300 focus:pl-2 placeholder-white/80 focus:placeholder-white font-medium rounded-none"
