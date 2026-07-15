@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { emailjsConfig, personalInfo, socialLinks } from '../data/portfolioData';
+import { emailjsConfig, personalInfo, socialLinks, web3formsConfig } from '../data/portfolioData';
 
 const Contact = () => {
   const ref = useRef(null);
@@ -16,21 +16,26 @@ const Contact = () => {
   const y = useTransform(scrollYProgress, [0, 1], ["-20%", "30%"]);
 
   const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (status === 'sending') return;
+
     const form = formRef.current;
     const firstName = form.querySelector('#firstName')?.value || '';
+    const lastName = form.querySelector('#lastName')?.value || '';
     const email = form.querySelector('#email')?.value || '';
     const message = form.querySelector('#message')?.value || '';
 
     // Validate inputs
     if (!firstName.trim() || !email.trim() || !message.trim()) {
-      e.preventDefault();
       setStatus('error');
       setTimeout(() => setStatus('idle'), 3000);
       return;
     }
 
-    // Check if EmailJS is configured (checking both placeholder values and falsy states)
-    const isConfigured = 
+    setStatus('sending');
+
+    // 1. Try EmailJS
+    const isEmailJSConfigured = 
       emailjsConfig.serviceId && 
       emailjsConfig.serviceId !== 'YOUR_EMAILJS_SERVICE_ID' &&
       emailjsConfig.templateId && 
@@ -38,33 +43,73 @@ const Contact = () => {
       emailjsConfig.publicKey && 
       emailjsConfig.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY';
 
-    if (!isConfigured) {
-      // EmailJS not configured — let browser submit form natively to FormSubmit
-      setStatus('sending');
+    if (isEmailJSConfigured) {
+      try {
+        const emailjs = await import('@emailjs/browser');
+        await emailjs.sendForm(
+          emailjsConfig.serviceId,
+          emailjsConfig.templateId,
+          formRef.current,
+          emailjsConfig.publicKey
+        );
+        setStatus('success');
+        formRef.current.reset();
+      } catch (error) {
+        console.error('EmailJS Error:', error);
+        setStatus('error');
+      }
+      setTimeout(() => setStatus('idle'), 4000);
       return;
     }
 
-    // EmailJS integration
-    e.preventDefault();
-    if (status === 'sending') return; // Prevent duplicate submissions
-    setStatus('sending');
+    // 2. Try Web3Forms
+    const isWeb3FormsConfigured = 
+      web3formsConfig.accessKey && 
+      web3formsConfig.accessKey !== 'YOUR_WEB3FORMS_ACCESS_KEY';
 
+    if (isWeb3FormsConfigured) {
+      try {
+        const response = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            access_key: web3formsConfig.accessKey,
+            name: `${firstName} ${lastName}`,
+            email: email,
+            message: message,
+            subject: `New Portfolio Message from ${firstName} ${lastName}`
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+          setStatus('success');
+          formRef.current.reset();
+        } else {
+          console.error('Web3Forms Error:', data);
+          setStatus('error');
+        }
+      } catch (error) {
+        console.error('Web3Forms Connection Error:', error);
+        setStatus('error');
+      }
+      setTimeout(() => setStatus('idle'), 4000);
+      return;
+    }
+
+    // 3. Fallback: Prefilled mailto link
     try {
-      const emailjs = await import('@emailjs/browser');
-      await emailjs.sendForm(
-        emailjsConfig.serviceId,
-        emailjsConfig.templateId,
-        formRef.current,
-        emailjsConfig.publicKey
-      );
+      const mailtoLink = `mailto:${personalInfo.emails.primary}?subject=Portfolio Contact from ${firstName} ${lastName}&body=${encodeURIComponent(`From: ${firstName} ${lastName}\nEmail: ${email}\n\n${message}`)}`;
+      window.open(mailtoLink, '_blank');
       setStatus('success');
       formRef.current.reset();
     } catch (error) {
-      console.error('EmailJS Error:', error);
       setStatus('error');
     }
-
-    setTimeout(() => setStatus('idle'), 4000);
+    setTimeout(() => setStatus('idle'), 3000);
   };
 
   return (
@@ -104,18 +149,7 @@ const Contact = () => {
             </a>
           </div>
 
-          <form 
-            ref={formRef} 
-            action={`https://formsubmit.co/${personalInfo.emails.primary}`}
-            method="POST"
-            onSubmit={handleSubmit} 
-            className="flex flex-col gap-12 md:gap-16 w-full"
-          >
-            {/* FormSubmit Configurations */}
-            <input type="hidden" name="_captcha" value="false" />
-            <input type="hidden" name="_next" value={typeof window !== 'undefined' ? window.location.href : 'https://portfolio-tau-gold-76.vercel.app/#contact'} />
-            <input type="hidden" name="_subject" value="New message from portfolio website!" />
-
+          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-12 md:gap-16 w-full">
             <div className="flex flex-col md:flex-row gap-12 md:gap-20 w-full">
               {/* Left Column */}
               <div className="flex-1 flex flex-col gap-10">
