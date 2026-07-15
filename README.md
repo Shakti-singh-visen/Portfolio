@@ -93,6 +93,5 @@ Before setting up the project locally, ensure you have the following installed:
 Feel free to connect with me to discuss opportunities, collaborations, or projects!
 
 - **Email**: [ssvisen12@gmail.com](mailto:ssvisen12@gmail.com)
-- **Phone**: +91 9026293703
 - **Location**: Uttar Pradesh (Lucknow), India
 - **LinkedIn**: [@shakti-singh-visen](https://www.linkedin.com/in/shakti-singh-visen-810939289/)
